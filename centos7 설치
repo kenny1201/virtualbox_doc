@@ -1,0 +1,49 @@
+★centos7 설치
+
+
+★부트 메뉴 항목
+CentOS 6.x까지는 /etc/grub.conf 에서 수정해야 했지만 CentOS 7부터는 /boot/grub2/grub.cfg 을 수정
+
+
+★locale설정
+ localectl status
+ localectl list-locales | grep en_US
+ localectl set-locale LANG=en_US.UTF-8
+
+ localectl list-keymaps | grep us
+ localectl set-keymap us
+ localectl set-x11-keymap us
+
+★commnad line 표시 /etc/bashrc
+[ "$PS1" = "\\s-\\v\\\$ " ] && PS1="[\u@\h \$PWD]\\$ "
+
+★alias설정
+alias cp='cp -i'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+alias grep='grep --color=auto'
+alias l.='ls -d .* --color=auto'
+alias ll='ls -l --color=auto'
+alias ls='ls --color=auto'
+alias mv='mv -i'
+alias rm='rm -i'
+alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-tilde'
+
+
+★vim설치・설정
+yum -y install vim-enhanced
+
+vi /etc/bashrc
+alias vi=vim
+
+vi ~/.vimrc
+
+syntax on
+set nu
+set ts=4
+set sw=4
+set cindent
+set smartindent
+set hlsearch
+colorscheme koehler
+filetype on

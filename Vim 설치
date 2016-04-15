@@ -1,0 +1,20 @@
+★Vim 설치
+1. 설치
+yum install vim-enhanced
+
+2. alias 추가
+vi /etc/bashrc
+alias vi=vim
+
+3. 설정추가
+vi ~/.vimrc
+
+syntax on
+set nu
+set ts=4
+set sw=4
+set cindent
+set smartindent
+set hlsearch
+colorscheme koehler
+filetype on

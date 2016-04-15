@@ -1,0 +1,10 @@
+★필요한 유틸 설치
+
+★ dig, nslookup
+yum install bind-utils
+
+★ nmap 네트워크 스캔
+yum install nmap
+
+★ traceroute
+yum install traceroute

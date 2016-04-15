@@ -1,0 +1,8 @@
+★ TLS버전확인
+
+1. nmap --script ssl-enum-ciphers -p 443 sapp.sf-puzzle.jp
+
+
+2. openssl s_client -connect  sapp.sf-puzzle.jp:443 -ssl3
+
+ -ssl2, -ssl3, -tls1, -tls1_1, -tls1_2, -no_ssl2, -no_ssl3, -no_tls1

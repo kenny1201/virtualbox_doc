@@ -1,0 +1,505 @@
+00.commnad line 표시 /etc/bashrc
+[ "$PS1" = "\\s-\\v\\\$ " ] && PS1="[\u@\h \$PWD]\\$ "
+
+0. Centos 설정
+01.hostname 변경
+hostnamectl set-hostname centos7
+systemctl restart systemd-hostnamed
+vi /etc/hosts
+
+02.network 설정
+nmcli connection modify enp0s3 connection.autoconnect yes
+nmcli connection modify enp0s8 connection.autoconnect yes
+★ip설정(일반적처음 설정 101)  200으로 변경했음
+nmcli c mod enp0s8 ipv4.addresses 192.168.56.200/24
+★설정반영
+systemctl restart network.service
+
+★Network GUI MODE로 설정
+nmtui 
+
+1.nginx
+
+★설치참고 <http://blog.beany.co.kr/archives/2422>
+
+★의존패키지
+yum -y install gcc g++ cpp gcc-c++
+yum -y install pcre-devel
+yum -y install openssl openssl-devel
+yum -y install gd gd-devel
+
+★컴파일  <컴파일 옵션:http://webdir.tistory.com/238>
+# ./configure --prefix=/usr/local/nginx-1.9.14 \
+--error-log-path=/var/log/nginx/error.log \
+--http-log-path=/var/log/nginx/access.log \
+--http-client-body-temp-path=/var/tmp/nginx/client \
+--http-proxy-temp-path=/var/tmp/nginx/proxy \
+--http-fastcgi-temp-path=/var/tmp/nginx/fastcgi \
+--http-uwsgi-temp-path=/var/tmp/nginx/fastcgi \
+--http-scgi-temp-path=/var/tmp/nginx/fastcgi \
+--with-http_ssl_module \
+--with-http_stub_status_module \
+--with-http_addition_module \
+--with-http_degradation_module \
+--with-http_gzip_static_module \
+--with-http_image_filter_module \
+--with-http_random_index_module \
+--with-http_realip_module \
+--with-http_sub_module \
+--user=nginx \
+--group=nginx
+
+# make && make install
+
+
+★생략시 디폴트 
+--conf-path=/usr/local/nginx-1.9.14/conf/nginx.conf \		=> <prefix>/conf/nginx.conf
+--sbin-path=/usr/local/nginx-1.9.14/sbin \					=> <prefix>/sbin/nginx
+
+★nginx 심볼릭링크 작성
+ln -s /usr/local/nginx-1.9.14/ /usr/local/nginx
+
+★sbin 장소가 별도인경우 PATH 추가
+~/.bash_profile		:/usr/local/nginx/sbin
+수정후 source ~/.bash_profile 로 바로 적용
+
+★nginx user group 생성
+유저확인 : cat /etc/passwd
+그룹확인 : cat /etc/group
+useradd -u xx -M -d /var/www -s /sbin/nologin nginx
+groupadd -g xx nginx (존재시↓)
+groupmod -9 xx nginx
+
+★tmp 디렉토리 작성
+mkdir -p /var/tmp/nginx/client
+
+★서비스등록
+A. init.d nginx 스크립트 작성<별도문서 nginx init.d 스크립트>
+vi /etc/init.d/nginx
+B. 실행권한부여
+chmod +x /etc/init.d/nginx
+C. 자동실행등록
+chkconfig nginx on
+chkconfig --list
+
+systemctl enable nginx
+systemctl start nginx
+
+★방화벽 http
+firewall-cmd --permanent --add-service=http
+firewall-cmd --permanent --add-service=https
+firewall-cmd --reload
+
+★방화벽 걍 해제(개별적등록 안할시)
+systemctl status firewalld
+systemctl disable firewalld
+
+
+★서버 가상화 설정
+- nginx.conf 
+include /usr/local/nginx/conf/vhosts/xxxxxx.conf
+
+
+
+
+
+2.mysql
+★사전준비 CentOS7 mariaDB가 디폴트설치되어 있을수있으므로 경합을 피하기위해 삭제
+yum remove mariadb-libs
+rm -rf /var/lib/mysql/
+
+★yum repository 추가 http://dev.mysql.com/downloads/repo/yum/
+rpm -Uvh http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
+
+★yum 로 설치
+yum -y install mysql-community-server
+
+systemctl enable mysqld
+systemctl start mysqld
+
+★firewalld 설정
+firewall-cmd --permanent --add-service=mysql
+firewall-cmd --reload
+
+★mysql secure 설정
+/usr/bin/mysql_secure_installation
+
+★root 초기 패스워드
+/var/log/mysqld.log
+[Note] A temporary password is generated for root@localhost : xxxxxxxxxx
+
+Enter password for user root : xxxxxxxxxx
+
+Change the password for root? [Y/n] n
+Remove anonymous users? [Y/n] Y
+Disallow root login remotely? [Y/n] Y
+Remove test database and access to it? [Y/n] Y
+Reload privilege tables now? [Y/n] Y
+
+★유저 생성
+create user deploy@"192.168.56.%" identified by "deploy";
+grant all privileges on *.* to deploy@"192.168.56.%" identified by "deploy" with grant option;
+flush privileges;
+
+create user root@"192.168.56.%" identified by "root";
+grant all on *.* to root@"192.168.56.%";
+flush privileges;
+
+GRANT ALL on DB명.* TO id@'xxx.xxx.xxx.%';
+
+create schema cap11 default character set utf8;
+
+MySQL Workbench 접속 확인
+
+★仮　root	Capcom1201!
+
+★my.cnf 설정(언어변경...)
+vi /etc/my.cnf
+
+[mysqld]
+port = 3306
+datadir=/var/lib/mysql
+socket=/var/lib/mysql/mysql.sock
+user = mysql
+lc-messages-dir = /usr/share/mysql
+character-set-server = utf8
+# skip-character-set-client = handshake
+collation-server = utf8_general_ci
+
+## Default DB engine setting
+default-storage-engine = innodb
+
+## DB base settinngs
+max_connections = 180
+thread_cache_size = 150
+# thread_concurrency = 16
+open_files_limit = 8100
+wait_timeout = 60
+key_buffer_size = 64M
+table_open_cache = 2048
+sort_buffer_size = 1M
+join_buffer_size = 1M
+read_buffer_size = 1M
+read_rnd_buffer_size = 1M
+max_allowed_packet = 16M
+max_heap_table_size = 256M
+tmp_table_size = 256M
+query_cache_size = 128M
+skip-external-locking
+skip-name-resolve
+
+## for InnoDB param
+innodb_buffer_pool_size = 12000M
+innodb_flush_log_at_trx_commit = 1
+## innodb_additional_mem_pool_size is deprecated 5.6.3
+# innodb_additional_mem_pool_size = 16M
+innodb_file_per_table
+innodb_log_buffer_size = 32M
+innodb_log_file_size = 256M
+innodb_lock_wait_timeout = 50
+innodb_open_files = 2048
+innodb_flush_method = O_DIRECT
+
+## Fusion I/O tuning
+#innodb_file_format_max=Barracuda
+innodb_thread_concurrency = 0
+innodb_io_capacity = 20000
+innodb_read_io_threads = 8
+innodb_write_io_threads = 16
+innodb_adaptive_flushing = 1
+
+## slowlog settings
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2
+min_examined_row_limit = 10000
+expire_logs_days = 2
+
+autocommit=0
+transaction-isolation=READ-COMMITTED
+
+
+# 추가
+explicit_defaults_for_timestamp = 1
+
+
+[mysqld_safe]
+log-error=/var/log/mysqld.log
+pid-file=/var/run/mysqld/mysqld.pid
+
+## errorlog setting
+log_error = /var/log/mysql/error.log
+
+[mysqldump]
+quick
+max_allowed_packet = 16M
+default-character-set = utf8
+
+★MySQL 5.7.11 도입 패스워드 라이프타임(디폴트0 은 무효)
+default_password_lifetime = 0
+
+mkdir /var/log/mysql
+chown -R mysql:mysql /var/log/mysql
+
+
+
+
+★★ php7, nginx 등 Centos7 표준리포지토리에 없는 패키지를 사용할경우 
+     [epel],[remi] 외부리포지토리 설정이 필요
+★yum epel 저장소 추가 
+yum repolist
+rpm -qa epel-release
+yum list epel-relaese
+yum -y install epel-relaese
+★remi 저장소 추가
+rpm --import http://rpms.famillecollet.com/RPM-GPG-KEY-remi
+rpm -ivh http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+
+
+
+3.php
+참고(http://blog.beany.co.kr/archives/2665)
+
+★php 다운로드
+http://php.net/get/php-7.0.5.tar.gz/from/a/mirror
+http://jp2.php.net/get/php-7.0.5.tar.gz/from/this/mirror
+curl --location http://jp2.php.net/get/php-7.0.5.tar.gz/from/this/mirror -o php-7.0.5.tar.gz
+
+★의존패키지 설치
+yum -y install gcc g++ cpp gcc-c++
+yum -y install openssl openssl-devel
+yum -y install gd gd-devel
+ 
+yum -y install libxml2-devel
+yum -y install bzip2-devel
+yum -y install curl-devel
+yum -y install libicu-devel
+yum -y install libmcrypt libmcrypt-devel 　× 설치안댐
+yum -y install openldap openldap-devel
+yum -y install wget
+
+
+★yum epel 저장소 추가 를 한경우에 패스
+wget -c http://packages.sw.be/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm
+rpm -i rpmforge-release-0.5.3-1.el6.rf.*.rpm
+rpm --import http://apt.sw.be/RPM-GPG-KEY.dag.txt
+
+
+★미설치 의존패키지 설치
+yum -y install libmcrypt libmcrypt-devel
+
+
+★PHP 설치시 –with-ldap 옵션을 사용할 경우 아래와 같이 심볼릭 링크를 추가
+ln -s /usr/lib64/libldap.so /usr/lib/libldap.so
+ln -s /usr/lib64/libldap_r.so /usr/lib/libldap_r.so
+
+★php 압축풀기
+tar xvfz php-7.0.5.tar.gz
+
+★컴파일 (option 확인 : ./configure --help )
+./configure \
+--prefix=/usr/local/php-7.0.5 \
+--with-config-file-path=/usr/local/php-7.0.5/etc \
+--with-config-file-scan-dir=/usr/local/php-7.0.5/etc/conf.d \
+--disable-debug \
+--enable-bcmath \
+--enable-exif \
+--enable-cgi \
+--enable-fpm \
+--enable-ftp \
+--enable-gd-native-ttf \
+--enable-inline-optimization \
+--enable-intl \
+--enable-mbregex \
+--enable-mbstring \
+--enable-sigchild \
+--enable-soap \
+--enable-sockets \
+--enable-sysvsem=yes \
+--enable-sysvshm=yes \
+--enable-xml \
+--enable-zip \
+--with-bz2 \
+--with-curl \
+--with-gd \
+--with-gettext \
+--with-iconv \
+--with-mcrypt \
+--with-mhash \
+--with-mysqli \
+--with-openssl \
+--with-pdo-mysql \
+--with-xmlrpc \
+--with-zlib \
+--with-freetype-dir=/usr/include/freetype2 \
+--with-jpeg-dir=/usr/lib \
+--with-libxml-dir=/usr/lib \
+--with-png-dir=/usr/lib \
+--with-zlib-dir=/usr/lib \
+--with-fpm-user=nginx \
+--with-fpm-group=nginx
+
+# --with-ldap \
+
+# --enable-mod-charset \	php7 error 옵션 없어짐
+# --with-mysql \			php7 error 옵션 없어짐
+
+
+★컴파일
+./configure \
+--prefix=/usr/local/php-7.0.5 \
+--with-config-file-path=/usr/local/php-7.0.5/etc \
+--with-config-file-scan-dir=/usr/local/php-7.0.5/etc/conf.d \
+--disable-debug \				디버깅 상징적으로 컴파일합니다.
+--enable-bcmath \
+--enable-exif \
+--enable-cgi \
+--enable-fpm \
+--enable-ftp \
+--enable-gd-native-ttf \
+--enable-inline-optimization \
+--enable-intl \
+--enable-mbregex \
+--enable-mbstring \
+--enable-mod-charset \
+--enable-sigchild \
+--enable-soap \
+--enable-sockets \
+--enable-sysvsem=yes \
+--enable-sysvshm=yes \
+--enable-xml \
+--enable-zip \
+--with-bz2 \
+--with-curl \
+--with-gd \
+--with-gettext \
+--with-iconv \
+--with-mcrypt \
+--with-mhash \
+--with-mysql \
+--with-mysqli \
+--with-openssl \
+--with-pdo-mysql \
+--with-xmlrpc \
+--with-zlib \
+--with-freetype-dir=/usr/include/freetype2 \
+--with-jpeg-dir=/usr/lib \
+--with-libxml-dir=/usr/lib \
+--with-png-dir=/usr/lib \
+--with-zlib-dir=/usr/lib \
+--with-fpm-user=nginx \
+--with-fpm-group=nginx
+
+# --with-ldap \
+
+< rain용
+./configure \
+--prefix=/usr/local/php-5.4.16-fpm \
+--enable-mbstring \
+--enable-fpm \
+--enable-sockets \
+--with-pdo-mysql \
+--with-mysql=/usr/ \
+--with-libdir=lib64 \
+--with-zlib-dir=/usr/local/zlib \
+--with-libxml-dir=/usr/local/libxml2 \
+--with-jpeg-dir=/usr/lib \
+--with-gd \ 
+--with-curl \ 
+--with-openssl \
+--with-mysqli=/usr/bin/mysql_config
+>
+
+
+
+
+make
+
+make test
+
+make install
+
+ln -s /usr/local/php-7.0.5/ /usr/local/php
+
+★php.ini 설정파일 복사
+cp php.ini-production /usr/local/php/etc/php.ini
+★php-fpm 설정파일 복사
+cp /usr/local/php/etc/php-fpm.conf.default /usr/local/php/etc/php-fpm.conf
+★php-fpm 설정파일 편집
+vi /usr/local/php/etc/php-fpm.conf
+★php-fpm pool 설정파일 복사
+cp /usr/local/php/etc/php-fpm.d/www.conf.default /usr/local/php/etc/php-fpm.d/www.conf
+★php-fpm pool 설정파일 복사
+vi /usr/local/php/etc/php-fpm.d/www.conf
+
+[global]
+pid = /var/run/php-fpm/php-fpm.pid
+error_log = /var/log/php-fpm/php-fpm.log
+daemonize = yes
+
+[www]
+listen = /var/run/php-fpm/php-fpm.sock
+
+listen.owner = nginx
+listen.group = nginx
+listen.mode = 0660
+
+listen.allowed.clients = 127.0.0.1
+
+
+★서비스 스크립트 파일을 복사
+cp ./sapi/fpm/init.d.php-fpm /etc/init.d/php-fpm
+★php-fpm 서비스 스크립트에 실행권한을 부여
+chmod +x /etc/init.d/php-fpm
+
+★서비스 스크립트 파일 수정(경로수정)
+-start 디폴드 경로가 아닌경우 폴더체크후 생성
+dir=$(dirname ${pidfile})
+[ -d $dir ] || mkdir $dir
+
+★서비스 스크립트 파일을 복사(↑안됨, 준비된걸로 복사)
+
+★log 폴더작성
+mkdir /var/log/php-fpm
+chown -R nginx:nginx /var/log/php-fpm
+
+★ PATH 링크 추가
+ln -s /usr/local/php/sbin/php-fpm /usr/sbin/php-fpm
+
+
+★서비스 시작
+service php-fpm start
+★서비스 등록
+chkconfig php-fpm on
+
+
+★서비스 시작 CentOS7
+systemctl start php-fpm
+★서비스 등록 CentOS7  native service 가 아니라서 안댐
+systemctl enable php-fpm
+★서비스 확인
+systemctl list-unit-files
+
+
+★bin 장소가 별도인경우 PATH 추가
+vi ~/.bash_profile		:/usr/local/php/bin
+source ~/.bash_profile
+
+
+
+★php.ini
+date.timezone = Asia/Tokyo
+
+
+
+
+
+
+
+
+
+
+
+
+★서버감시용
+yum -y install sysstat

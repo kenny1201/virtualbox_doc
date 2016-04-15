@@ -1,0 +1,362 @@
+★memcached 설치
+참고 http://www.solanara.net/solanara/memcached
+참고 http://www.hack-log.net/entry/2015/05/17/100000
+
+
+1. libevent 설치
+wget https://github.com/libevent/libevent/releases/download/release-2.0.22-stable/libevent-2.0.22-stable.tar.gz
+tar xvfz libevent-2.0.22-stable.tar.gz
+cd libevent-2.0.22-stable
+./configure --prefix=/usr/local/libevent
+# ./configure CFLAGS="-I/usr/local/ssl/include" CPPFLAGS="-I/usr/local/ssl/include"
+make
+make install
+
+
+
+2. memcached 설치 (https://memcached.org/downloads)
+wget http://www.memcached.org/files/memcached-1.4.25.tar.gz
+tar xvfz memcached-1.4.25.tar.gz
+cd memcached-1.4.25
+./configure --enable-sasl --prefix=/usr/local/memcached --with-libevent=/usr/local/libevent/
+make
+make install
+
+
+
+# --enable-dtrace 생략
+
+만약 64비트로 컴파일하려면 --enable-64bit 옵션을 붙여 컴파일한다. libevent 도 64비트로 컴파일 되어있어야 한다.
+
+# memcached 컴파일 시 libevent를 잘 찾을 수 있도록 /etc/ld.so.conf 파일에 /usr/local/lib 경로를 추가, 
+# ldconfig 명령을 내려주면 모든 설치 준비는 완료
+	
+
+
+
+
+
+vi /etc/init.d/memcached
+
+
+=================================================================================================================
+
+#! /bin/sh
+#
+# chkconfig: - 55 45
+# description:  The memcached daemon is a network memory cache service.
+# processname: memcached
+# config: /etc/sysconfig/memcached
+# pidfile: /var/run/memcached/memcached.pid
+
+# Standard LSB functions
+#. /lib/lsb/init-functions
+
+# Source function library.
+. /etc/init.d/functions
+
+PORT=11211
+USER=memcached
+MAXCONN=1024
+CACHESIZE=64
+OPTIONS=""
+
+if [ -f /etc/sysconfig/memcached ];then
+        . /etc/sysconfig/memcached
+fi
+
+# Check that networking is up.
+. /etc/sysconfig/network
+
+if [ "$NETWORKING" = "no" ]
+then
+        exit 0
+fi
+
+RETVAL=0
+prog="memcached"
+pidfile=${PIDFILE-/var/run/memcached/memcached.pid}
+lockfile=${LOCKFILE-/var/lock/subsys/memcached}
+
+start () {
+        echo -n $"Starting $prog: "
+        # Ensure that $pidfile directory has proper permissions and exists
+        piddir=`dirname $pidfile`
+        if [ ! -d $piddir ]; then
+                mkdir $piddir
+        fi
+        if [ "`stat -c %U $piddir`" != "$USER" ]; then
+                chown $USER $piddir
+        fi
+
+        daemon --pidfile ${pidfile} memcached -d -p $PORT -u $USER  -m $CACHESIZE -c $MAXCONN -P ${pidfile} $OPTIONS
+        RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch ${lockfile}
+}
+stop () {
+        echo -n $"Stopping $prog: "
+        killproc -p ${pidfile} /usr/bin/memcached
+        RETVAL=$?
+        echo
+        if [ $RETVAL -eq 0 ] ; then
+                rm -f ${lockfile} ${pidfile}
+        fi
+}
+
+restart () {
+        stop
+        start
+}
+
+
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  status)
+        status -p ${pidfile} memcached
+        RETVAL=$?
+        ;;
+  restart|reload|force-reload)
+        restart
+        ;;
+  condrestart|try-restart)
+        [ -f ${lockfile} ] && restart || :
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|status|restart|reload|force-reload|condrestart|try-restart}"
+        RETVAL=2
+        ;;
+esac
+
+exit $RETVAL
+
+
+
+
+=================================================================================================================
+
+
+chmod +x /etc/init.d/memcached
+
+chkconfig --add memcached
+chkconfig memcached on
+
+/usr/bin 에 심볼릭 생성
+ln -s /usr/local/memcached/bin/memcached /usr/bin/memcached
+
+
+
+★CentOS7 수동 설치시 설정
+vi /etc/sysconfig/memcached
+PORT="11211"
+USER="memcached"
+MAXCONN="1024"
+CACHESIZE="512"
+OPTIONS=""
+
+vi /usr/lib/systemd/system/memcached.service
+[Unit]
+Description=Memcached
+Before=httpd.service
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/sysconfig/memcached
+ExecStart=/usr/bin/memcached -u $USER -p $PORT -m $CACHESIZE -c $MAXCONN $OPTIONS
+
+[Install]
+WantedBy=multi-user.target
+
+
+★memcached 유저 생성 
+
+USER=memcached
+
+memcached:x:498:497:Memcached daemon:/var/run/memcached:/sbin/nologin
+
+★memcached user group 생성
+유저확인 : cat /etc/passwd
+그룹확인 : cat /etc/group
+useradd -u 498 -c "Memcached daemon" -M -d /var/run/memcached -s /sbin/nologin memcached
+groupadd -g 498 memcached (존재시↓)
+groupmod -g 498 memcached
+
+
+★ 서비스 시작
+service memcached start
+★ 서비스 시작 CentOS7
+systemctl start memcached
+systemctl enable memcached
+
+★접속확인 
+yum -y install telnet
+
+telnet 127.0.0.1 11211
+
+stats
+
+
+
+
+https://github.com/php-memcached-dev/php-memcached/tree/php7
+
+
+★PECL:memcached 설치 및 설정
+★libmemcached
+wget https://launchpad.net/libmemcached/1.0/1.0.18/+download/libmemcached-1.0.18.tar.gz
+tar -zxvf libmemcached-1.0.18.tar.gz
+cd libmemcached-1.0.18
+./configure
+make && make install
+
+
+★msgpack
+wget http://pecl.php.net/get/msgpack-2.0.1.tgz
+tar xvfz msgpack-2.0.1.tgz
+cd msgpack-2.0.1
+phpize
+./configure
+make && make install
+
+vi /usr/local/php/etc/php.ini
+extension=msgpack.so
+
+
+★php memcached
+wget http://pecl.php.net/get/memcached-2.2.0.tgz
+tar xvfz memcached-2.2.0.tgz
+cd memcached-2.2.0
+phpize
+./configure --with-php-config=/usr/local/php/bin/php-config --enable-memcached-json --enable-memcached-msgpack
+[--enable-memcached-igbinary] 
+# --with-libmemcached-dir=/usr/local/include/libmemcached
+
+make && make install
+
+★php memcached CentOS7
+git clone -b php7 git://github.com/php-memcached-dev/php-memcached.git
+cd php-memcached
+phpize
+./configure --with-php-config=/usr/local/php/bin/php-config --enable-memcached-json --enable-memcached-msgpack
+[--enable-memcached-igbinary]
+# --with-libmemcached-dir=/usr/local/include/libmemcached
+
+make && make install
+
+
+vi /usr/local/php/etc/php.ini
+extension=memcached.so
+
+
+
+
+
+★PECL:memcache 설치 및 설정
+★php memcache PECL 모듈설치  (php7 대응이 아직인듯)
+
+wget http://pecl.php.net/get/memcache-3.0.8.tgz
+tar xvfz memcache-3.0.8.tgz
+cd memcache-3.0.8
+phpize
+./configure -with-php-config=/usr/local/php/bin/php-config
+make
+make install
+
+설치가 완료 되면 memcache.so 파일이 있는 곳을 알려준다. php.ini에 아래 내용 추가.
+
+vi /usr/local/php/etc/php.ini
+
+[memcache]
+extension_dir=/usr/local/php-5.6.10/lib/php/extensions/no-debug-non-zts-20131226/
+extension=memcache.so
+memcache.allow_failover=1
+memcache.max_failover_attempts=100
+memcache.chunk_size=32768
+memcache.default_port=11211
+
+
+#session.save_handler = files
+session.save_handler = memcache
+
+#session.save_path = "/var/lib/php/session"
+session.save_path = "tcp://127.0.0.1:11211"
+
+
+
+
+
+
+
+★memcache.php TEST
+
+<?php session_start(); ?>
+<pre>
+<?php
+$presessdata = @$_SESSION["data"];
+$_SESSION["data"] = @$_SESSION["data"] + 1;
+ 
+$memcache = new Memcache;
+$memcache->connect("localhost", 11211);
+print_r($memcache->getStats());
+ 
+$items = array(
+    'key1' => 'value1',
+    'key2' => 'value2',
+    'key3' => 'value3'
+);
+foreach ($items as $k => $v) {
+    $memcache->set($k, $v);
+}
+var_dump($memcache->get(array('key1', 'key3')));
+var_dump($memcache->get('key2'));
+var_dump($memcache->get('key4'));
+?>
+SESSION: <?php echo $_SESSION["data"]; ?>
+</pre>
+
+
+
+
+
+★memcached.php TEST
+<?php
+$memcache = new Memcached();
+$memcache->addServer('localhost', 11211);
+//print_r($memcache->getStats());
+$data = 'MemcachedをPHPで使うテスト';
+
+$items = array(
+    'key1' => 'value1',
+    'key2' => 'value2',
+    'key3' => 'value3'
+);
+foreach ($items as $k => $v) {
+    $memcache->set($k, $v);
+}
+//var_dump($memcache->get(array('key1', 'key3')));
+//var_dump($memcache->get('key2'));
+//var_dump($memcache->get('key4'));
+
+$v1 = 100;
+$v2 = 'string';
+$v3 = array(1, 2, 3);
+$v4 = array('type' => 'reguler', 'color' => 'blue');
+
+$memcache->set(1, $v1);
+$memcache->set(2, $v2);
+$memcache->set(3, $v3);
+$memcache->set(4, $v4);
+
+var_dump($memcache->get(1));
+var_dump($memcache->get(2));
+var_dump($memcache->get(3));
+var_dump($memcache->get(4));
+
+?>

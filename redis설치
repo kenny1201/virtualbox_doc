@@ -1,0 +1,211 @@
+★redis 설치
+참고<http://qiita.com/shinofara/items/9476cee35cfac1b7ee50>
+참고<http://takafumi-s.hatenablog.com/entry/2016/01/10/180051>
+최신다운로드URL
+http://download.redis.io/releases/redis-3.0.7.tar.gz
+
+curl --location http://download.redis.io/releases/redis-3.0.7.tar.gz -o redis-3.0.7.tar.gz
+tar xvfz redis-3.0.7.tar.gz
+cd redis-3.0.7
+
+make
+
+make install PREFIX=/usr/local/redis-3.0.7
+
+ln -s /usr/local/redis-3.0.7 /usr/local/redis
+
+vi ~/.bash_profile
+/usr/local/redis/bin PATH추가
+source ~/.bash_profile
+
+
+★서비스 등록 방법1(구식)
+vi /etc/init.d/redis-server
+
+=========================================================================================
+
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:     redis-server
+# Description:      redis-server - Persistent key-value db
+# chkconfig:   - 85 15
+### END INIT INFO
+ 
+REDISPORT=6379
+EXEC=/usr/local/redis/bin/redis-server
+CLIEXEC="/usr/local/redis/bin/redis-cli"
+ 
+# exists password
+if [ $2 ]
+    then
+    CLIEXEC="$CLIEXEC -a $2"
+fi
+ 
+ 
+PIDFILE=/var/run/redis.pid
+CONF="/usr/local/redis/redis.conf"
+ 
+start()
+{
+    if [ -f $PIDFILE ]
+        then
+                echo "$PIDFILE exists, process is already running or crashed"
+        else
+                echo "Starting Redis server..."
+                $EXEC $CONF
+        fi
+}
+ 
+stop()
+{
+    if [ ! -f $PIDFILE ]
+        then
+                echo "$PIDFILE does not exist, process is not running"
+        else
+                PID=$(cat $PIDFILE)
+                echo "Stopping ..."
+                $CLIEXEC -p $REDISPORT shutdown
+                while [ -x /proc/${PID} ]
+                do
+                    echo "Waiting for Redis to shutdown ..."
+                    sleep 1
+                done
+                echo "Redis stopped"
+        fi
+}
+ 
+case "$1" in
+    start)
+        start
+    ;;
+    stop)
+    stop        
+    ;;
+ restart)
+    stop
+        start
+    ;;
+    info)
+        if [ ! -f $PIDFILE ]
+    then
+        echo "$PIDFILE does not exist, process is not running"
+    else
+        $CLIEXEC info
+    fi
+    ;;
+    *)
+        echo "Usage: start|stop|restart [password]"
+        ;;
+esac
+
+=========================================================================================
+
+
+chmod +x /etc/init.d/redis-server
+
+chkconfig --add redis-server
+chkconfig redis-server on
+
+
+
+◎설정변경
+vi /usr/local/redis/redis.conf
+daemonize yes	-> background daemon으로 프로세스 생성
+logfile /var/log/redis/redis.log 
+★패스워드 설정
+requirepass password
+
+mkdir /var/log/redis
+
+service redis-server start
+
+
+★service 등록방법 CentOS7
+vi /etc/systemd/system/redis.service 
+or
+vi /usr/lib/systemd/system/redis.service
+
+[Unit]
+Description=Redis Server Daemon
+
+[Service]
+PIDFile=/run/redis.pid
+ExecStart=/usr/local/redis/bin/redis-server /usr/local/redis/redis.conf
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+
+systemctl start redis
+systemctl enable redis
+systemctl status redis
+
+
+★igbinary 모듈설치 (serialize 효율향상용)임의
+
+cd /usr/local/src
+git clone git://github.com/igbinary/igbinary.git
+cd igbinary/
+phpize
+./configure CFLAGS="-O2 -g" --enable-igbinary
+make;make install
+vi /usr/local/php/etc/php.ini
+
+; Load igbinary extension
+extension=igbinary.so
+
+; Use igbinary as session serializer
+session.serialize_handler=igbinary
+
+[igbinary]
+; Enable or disable compacting of duplicate strings
+; The default is On.
+igbinary.compact_strings=On
+
+
+
+★phpredis 모듈설치 방법1★
+
+cd /usr/local/src
+git clone -b php7 git://github.com/phpredis/phpredis.git
+cd phpredis
+phpize
+./configure --with-php-config=/usr/local/php/bin/php-config [--enable-redis-igbinary] 
+make;make install
+
+vi /usr/local/php/etc/php.ini
+extension=redis.so
+
+
+
+★phpredis 모듈설치 방법2(CentOS7 yum version)
+yum -y install php-pecl-redis
+
+
+★replication 설정(master:1 slave:*)
+슬레이브 config파일에 설정(slaveof 마스터ip port)
+slaveof 192.168.1.1 6379
+
+
+★테스트 코드
+
+<?php
+$redis = new Redis();
+try {
+	$redis->connect('127.0.0.1','6379', 2.5, NULL, 150);
+	$redis->auth('password');
+	$redis->select(1);
+	$redis->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
+
+    $key = 'myKey';
+    $value = array('val1' => 'myValue1',
+                    'val2' => 'Value2');
+    $ttl = 3600;
+    $redis->setex( $key, $ttl, $value );
+    $value = $redis->get($key);
+    var_dump($value);
+} catch(RedisException $e) {
+    var_dump($e);
+}
+$redis->close();
+?>

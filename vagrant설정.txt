@@ -1,0 +1,134 @@
+★vagrant★
+참고<http://www.task-notes.com/entry/20150611/1433991600>
+
+1. CentOS 설정
+네트워크 유효화 
+nmcli connection modify enp0s3 connection.autoconnect yes
+nmcli connection modify enp0s8 connection.autoconnect yes
+systemctl restart network
+
+2. Vagrant 유저 작성　◎
+# useradd -m vagrant
+# passwd vagrant
+
+3. SSH설정　◎
+Vagrant SSH를 사용 
+SSH 디폴트 유저는 vagrant
+공개키인증이 되도록 설정할 필요가 있음
+# mkdir /home/vagrant/.ssh
+# chmod 700 /home/vagrant/.ssh
+# yum -y install wget
+# wget --no-check-certificate "https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub" -O /home/vagrant/.ssh/authorized_keys
+# chmod 600 /home/vagrant/.ssh/authorized_keys
+# chown -R vagrant /home/vagrant/.ssh
+
+4. sudo 설정　◎
+sudo 패스워드 없이 사용되게함
+# visudo
+---
+以下をコメントアウト
+# Defaults     requiretty
+---
+'# %wheel ALL=(ALL)  NOPASSWD: ALL' の箇所のコメントを外し%wheelをvagrantに変更
+vagrant ALL=(ALL)     NOPASSWD: ALL
+
+설정확인
+su - vagrant
+sudo ls /root
+
+5. VirtualBox Guest Additions 인스톨
+VirtualBox Guest Addition : VirtualBox 기능을 가상머신이 활용할수있도록 인스톨
+# rpm -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+# yum -y install gcc
+# yum -y install kernel-devel-`uname -r`
+# yum -y install dkms
+# yum -y install perl
+# reboot
+
+VirtualBox
+http://dlc-cdn.sun.com/virtualbox/
+
+# wget http://download.virtualbox.org/virtualbox/5.0.16/VBoxGuestAdditions_5.0.16.iso
+# mkdir /media/VBoxGuestAdditions
+# mount -o loop,ro VBoxGuestAdditions_5.0.16.iso /media/VBoxGuestAdditions
+# sh /media/VBoxGuestAdditions/VBoxLinuxAdditions.run
+# rm VBoxGuestAdditions_5.0.16.iso
+# umount /media/VBoxGuestAdditions
+# rmdir /media/VBoxGuestAdditions
+
+6.udev 룰 삭제 (필요성??)
+BOX OS 기동시 네트워크 디바이스 에러가 안일어나는것 회피 udev룰을 삭제
+# ln -s -f /dev/null /etc/udev/rules.d/70-persistent-net.rules
+# rm -rf /dev/.udev/
+# rm -f /lib/udev/rules.d/75-persistent-net-generator.rules
+
+7. 추가설정　　◎
+# yum -y update
+---
+# vi /etc/sysconfig/selinux
+SELINUX=disabled
+---
+# service iptables stop
+# service ip6tables stop
+# chkconfig iptables off
+# chkconfig ip6tables off
+---
+# yum -y install ntp
+# ntpdate ntp.nict.jp
+# vi /etc/ntp.conf
+以下のように変更
+#server 0.centos.pool.ntp.org iburst
+#server 1.centos.pool.ntp.org iburst
+#server 2.centos.pool.ntp.org iburst
+#server 3.centos.pool.ntp.org iburst
+server -4 ntp.nict.jp iburst
+server -4 ntp.nict.jp iburst
+server -4 ntp.nict.jp iburst
+---
+# service ntpd start
+# chkconfig ntpd on
+
+8. BOX 사이즈 최소화　◎
+# du -sh /var/cache/yum
+# yum clean all
+---
+# dd if=/dev/zero of=/EMPTY bs=1M
+# rm -f /EMPTY
+
+9. firewall 일단 무효화
+systemctl disable firewalld
+systemctl status firewalld
+systemctl list-unit-files | grep firewall
+
+
+9. HOST에서 BOX작성 (Window CMD 에서 실행 <Window에 vagrant 설치되어있어야함>)
+> vagrant package --base centos66
+==> centos66: Exporting VM...
+==> centos66: Compressing package to: /Users/tasukujp/Documents/dev/package.box
+> dir package.box
+-rw-r--r--  1 tasukujp  staff  393824089  6  7 17:00 package.box
+
+
+10. BOX기동
+> vagrant box add CentOS7 package.box
+> vagrant box list
+CentOS7 (virtualbox, 0)
+
+> vagrant init CentOS7
+
+11. Vagrantfile 설정변경 (Network)
+config.vm.network "private_network", ip: "192.168.56.200"
+
+
+> vagrant up
+> vagrant ssh
+ssh 접속 되면 성공
+
+
+12. BOX 삭제
+> vagrant box list
+CentOS7 (virtualbox, 0)
+CentOS7_tmp (virtualbox, 0)
+> vagrant box remove CentOS7_tmp
+> vagrant box list
+CentOS7 (virtualbox, 0)

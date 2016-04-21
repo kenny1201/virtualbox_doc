@@ -4,7 +4,7 @@ tar xvf Python-3.5.1.tar.xz
 
 cd Python-3.5.1
 
-./configure -prefix=/usr/local
+./configure --prefix=/usr/local
 make
 ★이전 버전 영향을 주지 않기 위해서 altinstall ?? 필요? 그냥 install 
 make install 

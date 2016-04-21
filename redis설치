@@ -14,6 +14,8 @@ make install PREFIX=/usr/local/redis-3.0.7
 
 ln -s /usr/local/redis-3.0.7 /usr/local/redis
 
+cp /usr/local/redis-3.0.7/redis.conf /usr/local/redis/
+
 vi ~/.bash_profile
 /usr/local/redis/bin PATH추가
 source ~/.bash_profile

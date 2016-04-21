@@ -3,7 +3,7 @@
 wget http://nodejs.org/dist/v5.10.1/node-v5.10.1.tar.gz
 tar vxzf node-v5.10.1.tar.gz
 cd node-v5.10.1
-./configure --prefix=/usr/local/nodejs
+./configure --prefix=/usr/local/node
 make
 make install
 

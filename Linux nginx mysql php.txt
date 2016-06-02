@@ -177,6 +177,14 @@ MySQL Workbench 접속 확인
 
 ★仮　root	Capcom1201!
 
+
+★★ How to fix Access denied for user 'root'@'localhost' ★★
+mysqld --skip-grant-tables
+mysql -u root mysql
+$mysql> UPDATE user SET Password=PASSWORD('my_password') where USER='root';
+$mysql> FLUSH PRIVILEGES;
+
+
 ★my.cnf 설정(언어변경...)
 vi /etc/my.cnf
 

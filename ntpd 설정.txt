@@ -1,0 +1,45 @@
+yum install ntp
+
+vi /etc/ntp.conf
+
+#동기화 서버를 변경
+#server 0.centos.pool.ntp.org iburst
+#server 1.centos.pool.ntp.org iburst
+#server 2.centos.pool.ntp.org iburst
+#server 3.centos.pool.ntp.org iburst
+server ntp1.jst.mfeed.ad.jp iburst
+server ntp2.jst.mfeed.ad.jp iburst
+server ntp3.jst.mfeed.ad.jp iburst
+
+systemctl start ntpd
+systemctl enable ntpd
+
+
+#Firewalld 를 사용할경우 NTP서비스 허가가 필요 
+#NTP는 123/UDP 를 사용
+firewall-cmd --add-service=ntp --permant
+firewall-cmd --reload
+firewall-cmd --list-all
+
+#동작확인
+ntpq -p
+
+
+
+
+#VirtualBox Centos 에서 ntpd 
+VirtualBox の「設定」画面を開き、
+「ネットワーク」画面に移動すると、アダプター1に「割り当て:NAT」となっています。
+そこから「高度」の項目をクリックすると、あれこれと追加の設定項目が表示されますので、
+その中の「ポートフォワーディング」を選択します。
+ポートフォワーディングを選択すると、
+ポート変換の設定画面が開きますので、SSH接続用の設定を行ないます。
+
+名前：NTP
+プロトコル：TCP
+ホストIP：127.0.0.1
+ホストポート：50123（ホスト側でCentOS向けにつなげるポート番号。50000番以降で適当に。）
+ゲストIP：空白
+ゲストポート：123（CentOS側でNTP通信に使用するポート番号（デフォルトだと123））
+OKを押す。
+もういっぺんOK押して、設定画面も閉じる。

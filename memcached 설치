@@ -15,9 +15,9 @@ make install
 
 
 2. memcached 설치 (https://memcached.org/downloads)
-wget http://www.memcached.org/files/memcached-1.4.25.tar.gz
-tar xvfz memcached-1.4.25.tar.gz
-cd memcached-1.4.25
+wget http://www.memcached.org/files/memcached-1.4.33.tar.gz
+tar xvfz memcached-1.4.33.tar.gz
+cd memcached-1.4.33
 ./configure --enable-sasl --prefix=/usr/local/memcached --with-libevent=/usr/local/libevent/
 make
 make install
@@ -174,6 +174,8 @@ ExecStart=/usr/bin/memcached -u $USER -p $PORT -m $CACHESIZE -c $MAXCONN $OPTION
 [Install]
 WantedBy=multi-user.target
 
+#설치장소확인
+#ExecStart=/usr/local/memcached/bin/memcached -u $USER -p $PORT -m $CACHESIZE -c $MAXCONN $OPTIONS
 
 ★memcached 유저 생성 
 
@@ -239,6 +241,7 @@ phpize
 # --with-libmemcached-dir=/usr/local/include/libmemcached
 
 make && make install
+
 
 ★php memcached CentOS7
 git clone -b php7 git://github.com/php-memcached-dev/php-memcached.git

@@ -1,0 +1,37 @@
+★★★Veritica★★★
+
+★★flex table★★
+=> create flex table test();
+
+=> \dt
+public | test 
+public | test_keys
+세트로 두개 테이블이 만들어짐
+
+=> copy test from '/usr/www/test.json' parser fjsonparser();
+
+=> \d test
+public | test | __identity__
+public | test | __raw__
+
+★maptostring()
+=> select maptostring(__raw__) from test;
+
+★compute_flextable_keys() test_keys 테이블로 test 키값을 이동
+=> select compute_flextable_keys('test');
+
+★build_flextable_view()	view 테이블 작성
+=> select build_flextable_view('tets');
+
+=> select * from test_view;
+
+=> select column_name, data_type from view_columns where table_name = 'test_view';
+
+
+★★hybrid flex table★★
+=> create flex table test_hybrid(name varchar(41) default name::varchar(41), hike_safety float default hike_safety::float);
+
+★compute_flextable_keys_and_build_view()      세트로 실행
+
+
+★materialize_flextable_columns()

@@ -29,10 +29,10 @@ yum -y install openssl openssl-devel
 yum -y install gd gd-devel
 
 ★Download [http://nginx.org/en/download.html]
-curl --location http://nginx.org/download/nginx-1.9.14.tar.gz -o nginx-1.9.14.tar.gz
+curl --location http://nginx.org/download/nginx-1.11.6.tar.gz -o nginx-1.11.6.tar.gz
 
 ★컴파일  <컴파일 옵션:http://webdir.tistory.com/238>
-# ./configure --prefix=/usr/local/nginx-1.9.14 \
+# ./configure --prefix=/usr/local/nginx-1.11.6 \
 --error-log-path=/var/log/nginx/error.log \
 --http-log-path=/var/log/nginx/access.log \
 --http-client-body-temp-path=/var/tmp/nginx/client \
@@ -71,7 +71,7 @@ ln -s /usr/local/nginx-1.9.14/ /usr/local/nginx
 그룹확인 : cat /etc/group
 useradd -u xx -M -d /var/www -s /sbin/nologin nginx
 groupadd -g xx nginx (존재시↓)
-groupmod -9 xx nginx
+groupmod -g xx nginx
 
 ★tmp 디렉토리 작성
 mkdir -p /var/tmp/nginx
@@ -133,7 +133,7 @@ yum remove mariadb-libs
 rm -rf /var/lib/mysql/
 
 ★yum repository 추가 http://dev.mysql.com/downloads/repo/yum/
-rpm -Uvh http://dev.mysql.com/get/mysql57-community-release-el7-7.noarch.rpm
+rpm -Uvh http://dev.mysql.com/get/mysql57-community-release-el7-9.noarch.rpm
 
 ★yum 로 설치
 yum -y install mysql-community-server
@@ -165,13 +165,20 @@ create user deploy@"192.168.56.%" identified by "deploy";
 grant all privileges on *.* to deploy@"192.168.56.%" identified by "deploy" with grant option;
 flush privileges;
 
+<mysql 5.7이전 유저 생성>
 create user root@"192.168.56.%" identified by "root";
-grant all on *.* to root@"192.168.56.%";
+<mysql 5.7이후 유저 생성>
+CREATE USER 'root'@'192.168.56.%' IDENTIFIED WITH mysql_native_password BY 'Capcom1201!';
+UPDATE user SET Password=PASSWORD('Capcom1201!'), plugin="mysql_native_password", authentication_string="" where User='root' and Host="192.168.56.%";
+
+grant all [privileges] on *.* to 'root'@'192.168.56.%' with grant option;
 flush privileges;
 
-GRANT ALL on DB명.* TO id@'xxx.xxx.xxx.%';
+GRANT ALL [PRIVILEGES] on DB명.* TO id@'xxx.xxx.xxx.%';
 
 create schema cap11 default character set utf8;
+
+
 
 MySQL Workbench 접속 확인
 
@@ -293,9 +300,9 @@ rpm -ivh http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
 참고(http://blog.beany.co.kr/archives/2665)
 
 ★php 다운로드
-http://php.net/get/php-7.0.5.tar.gz/from/a/mirror
-http://jp2.php.net/get/php-7.0.5.tar.gz/from/this/mirror
-curl --location http://jp2.php.net/get/php-7.0.5.tar.gz/from/this/mirror -o php-7.0.5.tar.gz
+http://php.net/get/php-7.0.13.tar.gz/from/a/mirror
+http://jp2.php.net/get/php-7.0.13.tar.gz/from/this/mirror
+curl --location http://jp2.php.net/get/php-7.0.13.tar.gz/from/this/mirror -o php-7.0.13.tar.gz
 
 ★의존패키지 설치
 yum -y install gcc g++ cpp gcc-c++
@@ -309,6 +316,11 @@ yum -y install libicu-devel
 yum -y install libmcrypt libmcrypt-devel 　× 설치 경우 yum epel,rpm remi 확인
 yum -y install openldap openldap-devel
 yum -y install wget
+
+
+★php-odbc php-pdo (2016.11.28추가) 필요시
+yum install --enablerepo=remi-php70 php-odbc
+yum install unixODBC unixODBC-devel
 
 
 ★yum epel 저장소 추가 를 한경우에 패스
@@ -326,13 +338,13 @@ ln -s /usr/lib64/libldap.so /usr/lib/libldap.so
 ln -s /usr/lib64/libldap_r.so /usr/lib/libldap_r.so
 
 ★php 압축풀기
-tar xvfz php-7.0.5.tar.gz
+tar xvfz php-7.0.13.tar.gz
 
 ★컴파일 (option 확인 : ./configure --help )
 ./configure \
---prefix=/usr/local/php-7.0.5 \
---with-config-file-path=/usr/local/php-7.0.5/etc \
---with-config-file-scan-dir=/usr/local/php-7.0.5/etc/conf.d \
+--prefix=/usr/local/php-7.0.13 \
+--with-config-file-path=/usr/local/php-7.0.13/etc \
+--with-config-file-scan-dir=/usr/local/php-7.0.13/etc/conf.d \
 --disable-debug \
 --enable-bcmath \
 --enable-exif \
@@ -370,6 +382,10 @@ tar xvfz php-7.0.5.tar.gz
 --with-zlib-dir=/usr/lib \
 --with-fpm-user=nginx \
 --with-fpm-group=nginx
+
+★php-odbc php-pdo (2016.11.28추가) 필요시
+#--with-unixODBC[=DIR]
+--with-unixODBC=/usr \
 
 # --with-ldap \
 
@@ -490,11 +506,13 @@ chmod +x /etc/init.d/php-fpm
 ★서비스 스크립트 파일 수정(경로수정)
 vi /etc/init.d/php-fpm
 
--start 디폴드 경로가 아닌경우 폴더체크후 생성
+-start 디폴드 경로가 아닌경우 폴더체크후 생성	??
 dir=$(dirname ${pidfile})
 [ -d $dir ] || mkdir $dir
 
 ★서비스 스크립트 파일을 복사(↑안됨, 준비된걸로 복사)
+
+
 
 ★log 폴더작성
 mkdir /var/log/php-fpm

@@ -1,10 +1,10 @@
-wget --no-check-certificate https://www.python.org/ftp/python/3.5.1/Python-3.5.1.tar.xz
+wget --no-check-certificate https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tar.xz
 
-tar xvf Python-3.5.1.tar.xz
+tar xvf Python-3.5.2.tar.xz
 
-cd Python-3.5.1
+cd Python-3.5.2
 
-./configure --prefix=/usr/local
+./configure --prefix=/usr/local/Python3.5.2
 make
 ★이전 버전 영향을 주지 않기 위해서 altinstall ?? 필요? 그냥 install 
 make install 
@@ -18,4 +18,34 @@ yum install ncurses-devel.x86_64
 
 
 ★방향키 안먹힘 수정(해당버전 pip or pip3)
-pip3 install readline		
+pip install readline		
+
+
+
+★Django Install  Version 1.10.3
+pip install Django==1.10.3
+
+★django 버전 확인
+python -c "import django; print(django.get_version())"
+
+★프로젝트 생성
+django-admin.py startproject [appname]
+
+★uWSGI 설치
+pip install uwsgi
+
+★uWSGI 설치 확인
+# helloWorld.py
+def application(env, start_response):
+    start_response('200 OK', [('Content-Type','text/html')])
+    return [b"Hello World"] # python3
+
+# uwsgi --http :8000 --wsgi-file helloWorld.py
+
+# curl http://localhost:8000
+
+브라우져 
+http:://192.168.50.200:8000
+
+
+

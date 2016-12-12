@@ -1,0 +1,5 @@
+w32tm /query /configuration
+
+w32tm /config /update /manualpeerlist:[NTPサーバ名] /syncfromflags:manual
+
+w32tm /resync /nowait

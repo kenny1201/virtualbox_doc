@@ -1,0 +1,216 @@
+★★VirtualBox Extend Storage★★
+
+형싱변경
+http://qiita.com/niwashun/items/f71b0b805a6f97b514ec
+리사이즈 세팅
+http://qiita.com/takara@github/items/77182fe9d83142be5c5e
+http://qiita.com/fetaro/items/d7dc74262633ba474bc8
+http://te2u.hatenablog.jp/entry/2015/04/20/012914
+
+
+◎가상미디어 매니져 하드드라이브 일람
+c:\> VBoxManager list hdds
+↓샘플
+UUID:           692e2de9-26e7-42d8-b61a-b8e951d306da
+Parent UUID:    base
+State:          created
+Type:           normal (base)
+Location:       /Users/niwashun/VirtualBox VMs/MyProject/Couchbase03/disk/Couchbase03.vmdk
+Storage format: VMDK
+Capacity:       81920 MBytes
+
+
+◎UUID로 상세확인
+c:\> VBoxManager showhdinfo d1985caf-91e6-44cf-abed-fb11f906115c
+↓샘플
+UUID:           692e2de9-26e7-42d8-b61a-b8e951d306da
+Parent UUID:    base
+State:          created
+Type:           normal (base)
+Location:       /Users/niwashun/VirtualBox VMs/MyProject/Couchbase03/disk/Couchbase03.vmdk
+Storage format: VMDK
+Format variant: dynamic split2G
+Capacity:       81920 MBytes
+Size on disk:   30531 MBytes
+In use by VMs:  Couchbase03 (UUID: c72602f8-7f78-47ff-ad57-eac4a648d3c2)
+
+
+◎Resize 파일형식때문에 실패!!
+c:\> VBoxManage modifyhd 589ecfc5-5e76-4658-ad6e-a890294c1aa8 --resize 16384
+0%...
+Progress state: VBOX_E_NOT_SUPPORTED
+VBoxManage: error: Resize hard disk operation for this format is not implemented yet!
+
+
+◎Clone & Resize
+◎Clone
+c:\> VBoxManager clonehd "c:\~\~\box-disk1.vmdk" "c:\~\~\clone.vdi" --format vdi
+0%...10%...20%...30%...40%...50%...60%...70%...80%...90%...100%
+Clone hard disk created in format 'vdi'. UUID: 3ff29e54-a934-486f-8d42-432a954031b8
+
+◎Resize
+c:\> VBoxManager modifyhd "c:\~\~\clone.vdi" --resize 102400
+0%...10%...20%...30%...40%...50%...60%...70%...80%...90%...100%
+
+◎Re Clone (--variant Split2G 2G단위로 파일분할옵션 - 안해도댐)
+c:\> VBoxManager clonehd "c:\~\~\clone.vdi" "c:\~\~\box-disk1.vmdk" --format vmdk --variant Split2G
+
+◎VirtualBox Storage 재설정
+
+
+◎OS기동후 사이즈 확인 (아직 변경안댐)
+df -h
+ df -Th
+Filesystem           Type   Size  Used Avail Use% Mounted on
+/dev/mapper/vg_gpdbsandbox-lv_root
+                     ext4    18G  3.4G   13G  21% /
+tmpfs                tmpfs  3.9G     0  3.9G   0% /dev/shm
+/dev/sda1            ext4   477M   41M  411M  10% /boot
+
+
+◎파티션 작성
+fdisk /dev/sda
+
+WARNING: DOS-compatible mode is deprecated. It's strongly recommended to
+         switch off the mode (command 'c') and change display units to
+         sectors (command 'u').
+
+Command (m for help): n
+Command action
+   e   extended
+   p   primary partition (1-4)
+p
+Partition number (1-4): 3
+First cylinder (2611-13054, default 2611):
+Using default value 2611
+Last cylinder, +cylinders or +size{K,M,G} (2611-13054, default 13054):
+Using default value 13054
+
+
+◎파티션 확인 (/dev/sda3 생성)
+Command (m for help): p
+
+Disk /dev/sda: 107.4 GB, 107374182400 bytes
+255 heads, 63 sectors/track, 13054 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x0004c0d8
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          64      512000   83  Linux
+Partition 1 does not end on cylinder boundary.
+/dev/sda2              64        2611    20458496   8e  Linux LVM
+/dev/sda3            2611       13054    83884735   83  Linux
+
+
+◎파티션 타입변경
+Command (m for help): t
+Partition number (1-4): 3
+Hex code (type L to list codes): 8e
+Changed system type of partition 3 to 8e (Linux LVM)
+
+Command (m for help): p
+
+Disk /dev/sda: 107.4 GB, 107374182400 bytes
+255 heads, 63 sectors/track, 13054 cylinders
+Units = cylinders of 16065 * 512 = 8225280 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disk identifier: 0x0004c0d8
+
+   Device Boot      Start         End      Blocks   Id  System
+/dev/sda1   *           1          64      512000   83  Linux
+Partition 1 does not end on cylinder boundary.
+/dev/sda2              64        2611    20458496   8e  Linux LVM
+/dev/sda3            2611       13054    83884735   8e  Linux LVM
+
+
+◎변경완료
+Command (m for help): w
+The partition table has been altered!
+
+Calling ioctl() to re-read partition table.
+
+WARNING: Re-reading the partition table failed with error 16: Device or resource busy.
+The kernel still uses the old table. The new table will be used at
+the next reboot or after you run partprobe(8) or kpartx(8)
+Syncing disks.
+
+
+◎재기동
+reboot
+
+ df -Th
+Filesystem           Type   Size  Used Avail Use% Mounted on
+/dev/mapper/vg_gpdbsandbox-lv_root
+                     ext4    18G  3.4G   13G  21% /
+tmpfs                tmpfs  3.9G     0  3.9G   0% /dev/shm
+/dev/sda1            ext4   477M   41M  411M  10% /boot
+
+아직 변경 안댐
+
+
+◎Physical Volume 작성
+pvcreate /dev/sda3
+ Physical volume "/dev/sda3" successfully created
+
+
+◎Volume Group 로 Physical Volume 추가(vgextend)
+vgdisplay 로 그룹명 확인
+vgdisplay
+  --- Volume group ---
+  VG Name               vg_gpdbsandbox
+  System ID
+  Format                lvm2
+  Metadata Areas        1
+  Metadata Sequence No  3
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                2
+  Open LV               2
+  Max PV                0
+  Cur PV                1
+  Act PV                1
+  VG Size               19.51 GiB
+  PE Size               4.00 MiB
+  Total PE              4994
+  Alloc PE / Size       4994 / 19.51 GiB
+  Free  PE / Size       0 / 0
+  VG UUID               SM788Y-dl63-b1G1-FrU1-jNVC-NroD-dIWLFq
+
+vgextend vg_gpdbsandbox /dev/sda3
+  Volume group "vg_gpdbsandbox" successfully extended
+
+
+◎Logical Volume 늘림(lvextend)
+df 에 표시되는 마운트 포인트
+df
+Filesystem           1K-blocks    Used Available Use% Mounted on
+/dev/mapper/vg_gpdbsandbox-lv_root
+                      17938864 3548156  13472796  21% /
+tmpfs                  4029736       0   4029736   0% /dev/shm
+/dev/sda1               487652   41813    420239  10% /boot
+
+lvextend -l +100%FREE /dev/mapper/vg_gpdbsandbox-lv_root
+  Size of logical volume vg_gpdbsandbox/lv_root changed from 17.51 GiB (4482 extents) to 97.50 GiB (24961 extents).
+  Logical volume lv_root successfully resized
+
+
+◎파일시스템 Resize
+ resize2fs /dev/mapper/vg_gpdbsandbox-lv_root
+resize2fs 1.41.12 (17-May-2010)
+Filesystem at /dev/mapper/vg_gpdbsandbox-lv_root is mounted on /; on-line resizing required
+old desc_blocks = 2, new_desc_blocks = 7
+Performing an on-line resize of /dev/mapper/vg_gpdbsandbox-lv_root to 25560064 (4k) blocks.
+The filesystem on /dev/mapper/vg_gpdbsandbox-lv_root is now 25560064 blocks long.
+
+
+◎확인
+df -Th
+Filesystem           Type   Size  Used Avail Use% Mounted on
+/dev/mapper/vg_gpdbsandbox-lv_root
+                     ext4    96G  3.4G   88G   4% /
+tmpfs                tmpfs  3.9G     0  3.9G   0% /dev/shm
+/dev/sda1            ext4   477M   41M  411M  10% /boot

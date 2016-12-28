@@ -1,0 +1,54 @@
+★R★
+
+http://www.cran.r-project.org/
+
+
+wget url/R-3.3.2.tar.gz
+
+
+tar zxvf R-3.3.2.tar.gz
+
+cd R-3.3.2
+
+./configure --prefix=/usr/local/R-3.3.2 --with-x=no --enable-R-shlib
+
+# 画面なしの計算機にインストールする場合は '--with-x=no' のオプション
+# --enable-R-shlib	build R as a shared/dynamic library [no]
+
+make
+
+make install
+
+
+
+
+★error★
+error: --with-readline=yes (default) and headers/libs are not available
+
+→　yum install readline-devel
+
+
+error: --with-x=yes (default) and X11 headers/libs are not available
+
+
+
+★Rstudio★
+
+http://docs.rstudio.com/ide/server-pro/index.html
+
+wget https://download2.rstudio.org/rstudio-server-rhel-1.0.44-x86_64.rpm
+yum install --nogpgcheck rstudio-server-rhel-1.0.44-x86_64.rpm
+
+vi /etc/rstudio/rserver.conf
+
+# R install location
+rsession-which-r=/usr/local/R/bin/R
+
+# www-port=80
+# www-address=127.0.0.1
+
+systemctl start rstudio-server
+
+http://192.168.56.200:8787
+
+# login linux user

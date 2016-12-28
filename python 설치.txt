@@ -16,6 +16,7 @@ yum search ncurses
 yum install ncurses-libs.x86_64
 yum install ncurses-devel.x86_64
 
+yum install sqlite-devel
 
 ★방향키 안먹힘 수정(해당버전 pip or pip3)
 pip install readline		
@@ -49,3 +50,30 @@ http:://192.168.50.200:8000
 
 
 
+
+★jupyter 설치
+pip install jupyter
+
+★ipython
+In [1]: from notebook.auth import passwd
+In [2]: passwd()
+	Enter password : <password 입력>
+	Verify password : <password 재입력>
+	Out [2]: 'sha1:<해쉬화된 패스워드>'
+
+★설정파일 생성
+jupyter notebook --generate-config
+
+★jupyter_notebook_config.py
+c.NotebookApp.ip = '*'  # localhost이외 액서스 가능
+c.NotebookApp.port = 8888  # 서버 포트 지정, 디폴드 8888
+c.NotebookApp.open_browser = False  # 브라우저 자동으로 열림
+c.NotebookApp.notebook_dir = '/home/vagrant/jupyter'  # 작업 디렉토리 지정, 디폴트 기동 디렉토리
+c.NotebookApp.password = 'sha1:<해쉬화된 패스워드>'
+
+
+★기동
+jupyter notebook
+
+
+http://192.168.56.200:8888

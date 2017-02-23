@@ -459,6 +459,12 @@ tar xvfz php-7.0.13.tar.gz
 >
 
 
+# Centos6.8 참고용
+./configure –prefix=/usr/local/php –with-apxs2=/usr/local/apache/bin/apxs –with-mysql=/usr/local/mysql –with-mysqli=/usr/local/mysql/bin/mysql_config –with-pdo-mysql=/usr/local/mysql –disable-debug –enable-sigchild –enable-inline-optimization –enable-sysvsem –enable-sysvshm –enable-bcmath –enable-ftp –enable-sockets –enable-exif –enable-soap –with-zlib-dir=/usr –with-zlib –with-gd –with-jpeg-dir=/usr –with-png-dir=/usr –with-freetype-dir=/usr –with-iconv –enable-mbstring –with-curl –with-openssl –enable-zip
+
+
+
+
 
 
 make
@@ -482,10 +488,17 @@ pid = /var/run/php-fpm.pid
 error_log = /var/log/php-fpm/php-fpm.log
 daemonize = yes
 
+-------------------------------------------------------------------------------
+
 ★php-fpm pool 설정파일 복사
 cp /usr/local/php/etc/php-fpm.d/www.conf.default /usr/local/php/etc/php-fpm.d/www.conf
 ★php-fpm pool 설정파일 복사
 vi /usr/local/php/etc/php-fpm.d/www.conf
+
+★web log 설정부분 참고
+php_admin_value[error_log] = /var/log/php-fpm/www-error.log
+php_admin_flag[log_errors] = on
+
 
 [www]
 #listen = /var/run/php-fpm/php-fpm.sock
@@ -560,8 +573,8 @@ source ~/.bash_profile
 date.timezone = Asia/Tokyo
 
 
-
-
+#mysql 소켓 위치
+pdo_mysql.default_socket=/var/run/mysqld/mysqld.sock
 
 
 

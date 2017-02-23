@@ -1,0 +1,99 @@
+★★php 설치★★
+
+
+★★yum install★★
+
+★repository 추가 Centos6
+rpm -Uvh http://ftp.iij.ad.jp/pub/linux/fedora/epel/6/x86_64/epel-release-6-8.noarch.rpm
+rpm -Uvh http://rpms.famillecollet.com/enterprise/remi-release-6.rpm
+
+★repository 추가 Centos7
+rpm -Uvh http://ftp.iij.ad.jp/pub/linux/fedora/epel/7/x86_64/e/epel-release-7-5.noarch.rpm
+rpm -Uvh http://rpms.famillecollet.com/enterprise/remi-release-7.rpm
+
+★패키지 확인
+yum list --enablerepo=remi --enablerepo=remi-php56 | grep php
+
+★php 5.6 인스톨
+yum install --enablerepo=remi --enablerepo=remi-php56 php php-opcache php-devel php-mbstring php-mcrypt php-mysqlnd php-phpunit-PHPUnit php-pecl-xdebug php-pecl-xhprof
+
+↑ apache 2.4.16 설치후 인스톨 시도했을시 에러
+Finished Dependency Resolution
+Error: Package: php-5.6.30-1.el6.remi.x86_64 (remi-php56)
+           Requires: httpd-mmn = 20051115
+           Installed: httpd-2.4.16-1.x86_64 (installed)
+               httpd-mmn = 20120211
+           Available: httpd-2.2.15-53.el6.centos.x86_64 (base)
+               httpd-mmn = 20051115
+           Available: httpd-2.2.15-54.el6.centos.x86_64 (updates)
+               httpd-mmn = 20051115
+           Available: httpd-2.2.15-54.el6.centos.1.x86_64 (updates)
+               httpd-mmn = 20051115
+           Available: httpd-2.2.15-55.el6.centos.2.x86_64 (updates)
+               httpd-mmn = 20051115
+           Available: httpd-2.2.15-56.el6.centos.3.x86_64 (updates)
+               httpd-mmn = 20051115
+
+
+
+
+
+
+
+★★php 5.6 RPM인스톨★★
+
+★libcurl-devel 의존관계 해결
+yum provides curl-devel
+yum install curl-devel
+
+★libjpeg-turbo-devel 의존관계 해결
+yum provides libjpeg-devel
+yum install libjpeg-turbo-devel
+
+★firebird-devel 의존관계 해결
+yum install firebird-devel
+
+★libmcrypt-devel 의존관계 해결
+yum install libmcrypt-devel
+
+
+
+★php SRPM 획득
+https://dl.iuscommunity.org/pub/ius/archive/CentOS/6/SRPMS/
+
+wget https://dl.iuscommunity.org/pub/ius/archive/CentOS/6/SRPMS/php56u-5.6.28-1.ius.centos6.src.rpm
+->의존관계에러...
+
+wget https://dl.iuscommunity.org/pub/ius/archive/CentOS/6/SRPMS/php56u-5.6.4-1.ius.centos6.src.rpm
+->OK
+
+★MPM 변경
+http://www.kakiro-web.com/linux/centos6-apache-install.html
+
+
+★RPM 설치
+rpm -Uvh php56u-5.6.4-1.ius.centos6.src.rpm
+
+★RPM build warining
+user mockbuild does not exist - using root
+group mockbuild does not exist - using root
+
+useradd -s /sbin/nologin mockbuild
+
+
+Sorry, I cannot run apxs.  Possible reasons follow:
+
+1. Perl is not installed
+2. apxs was not found. Try to pass the path using --with-apxs2=/path/to/apxs
+3. Apache was not built using --enable-so (the apxs usage page is displayed)
+
+
+Apache2.4 RPM설치시
+/usr/sbin/apxs」가 아니라 「/usr/bin/apxs 에 존재함
+rpmbuild SPEC/php56u.spec 변경
+# /usr/sbin/apsx with httpd < 2.4 and defined as /usr/bin/apxs with httpd >= 2.4
+ %{!?_httpd_apxs:       %{expand: %%global _httpd_apxs       %%{_sbindir}/apxs}}
+↓変更
+ %{!?_httpd_apxs:       %{expand: %%global _httpd_apxs       %%{_bindir}/apxs}}
+
+

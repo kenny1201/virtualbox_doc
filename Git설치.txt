@@ -1,0 +1,17 @@
+★★Git 설치 from Source★★
+
+★의존 패키지 설치
+yum install curl-devel expat-devel gettext-devel openssl-devel zlib-devel perl-ExtUtils-MakeMaker
+
+
+wget https://www.kernel.org/pub/software/scm/git/git-2.11.0.tar.gz
+
+cd git-2.11.0
+make prefix=/usr/local/git-2.11.0 all
+make prefix=/usr/local/git-2.11.0 install
+
+
+vi ~/.bash_profile
+source ~/.bash_profile
+
+git --version

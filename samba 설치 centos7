@@ -44,7 +44,17 @@ systemctl start smb
 	TCP 139
 	UDP 138
 	UDP 137
-★설정내용확인
+
+★설정내용확인 (Centos6)
+vi /etc/sysconfig/iptables
+↓추가
+ -A INPUT -p tcp --dport 139 -j ACCEPT
+ -A INPUT -p udp --dport 137 -j ACCEPT
+ -A INPUT -p udp --dport 138 -j ACCEPT
+ -A INPUT -p tcp --dport 445 -j ACCEPT
+service iptables restart
+
+★설정내용확인 (Centos7)
 firewall-cmd --list-all
 ★서비스명 억세스허가 설정
 firewall-cmd --permanent --add-service=samba

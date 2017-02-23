@@ -1,0 +1,67 @@
+★★yum 인스톨★★
+
+★Apache2.4★
+
+cd /etc/yum.repos.d
+wget https://repos.fedorapeople.org/repos/jkaluza/httpd24/epel-httpd24.repo
+yum install httpd24
+
+ln -s /opt/rh/httpd24/root/etc/httpd /etc/httpd
+mkdir /var/www
+ln -s /opt/rh/httpd24/root/var/www/html /var/www/html
+ln -s /opt/rh/httpd24/root/var/log/httpd /var/log/httpd
+
+service httpd24-httpd start
+chkconfig httpd24-httpd on
+
+
+★Php5.6★
+yum install epel-release
+yum --enablerepo=remi,remi-php56 install php php-common php-pdo php-mysqlnd
+에러
+
+yum install --enablerepo=remi-php56 php-fpm php-pdo php-mysqlnd
+
+less /etc/php-fpm.d/www.conf
+# Listen PORT 확인
+listen = 127.0.0.1:9000
+/etc/init.d/php-fpm start
+chkconfig php-fpm on
+# php.conf 파일 확인
+cat /etc/httpd/conf.d/php.conf
+<FilesMatch \.php$>
+    SetHandler application/x-httpd-php
+</FilesMatch>
+ProxyPassMatch ^/(.*\.php(/.*)?)$ fcgi://127.0.0.1:9000/var/www/html/$1
+
+
+
+vi /var/www/html/index.php
+<?php
+phpinfo();
+?>
+
+vi /var/www/html/pdo.php
+<?php
+try{
+  $dbh = new PDO("mysql:host=localhost;dbname=mysql;charset=utf8", "root", "Capcom1!");
+
+  $stmt = $dbh->query("SELECT Host,User FROM mysql.user;");
+  $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+  var_dump($rows);
+
+  $stmt = null;
+} catch(PDOException $e){
+  echo $e->getMessage();
+}
+?>
+
+
+
+
+
+
+
+
+★MySQL 5.7★
+별도 참조

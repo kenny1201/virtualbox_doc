@@ -1,0 +1,187 @@
+★★apache 설치★★
+
+★★apache2.4 RPM 설치
+
+yum install gcc make gcc-c++
+
+cd /usr/local/src
+
+wget http://archive.apache.org/dist/httpd/httpd-2.4.25.tar.bz2
+wget http://ftp.neowiz.com/apache/apr/apr-1.5.2.tar.bz2
+wget http://ftp.neowiz.com/apache/apr/apr-util-1.5.4.tar.bz2
+
+★libuuid-devel 
+yum install libuuid-devel
+
+★rpm-build설치
+yum install rpm-build
+
+★APR RPM 작성
+yum install autoconf libtool doxygen
+
+rpmbuild -tb --clean apr-1.5.2.tar.bz2
+
+★APR RPM 설치
+rpm -Uvh apr-1.5.2-1.x86_64.rpm apr-devel-1.5.2-1.x86_64.rpm
+
+★EPEL 리포지토리 인스톨
+yum install epel-release
+
+★freetds-devel 인스톨
+yum --enablerepo=epel install freetds-devel
+
+★APR UTIL RPM작성
+rpmbuild -tb --clean apr-util-1.5.4.tar.bz2
+
+expat-devel is needed by apr-util-1.5.4-1.x86_64
+postgresql-devel is needed by apr-util-1.5.4-1.x86_64
+mysql-devel is needed by apr-util-1.5.4-1.x86_64
+sqlite-devel >= 3.0.0 is needed by apr-util-1.5.4-1.x86_64
+unixODBC-devel is needed by apr-util-1.5.4-1.x86_64
+openldap-devel is needed by apr-util-1.5.4-1.x86_64
+openssl-devel is needed by apr-util-1.5.4-1.x86_64
+nss-devel is needed by apr-util-1.5.4-1.x86_64
+
+yum install expat-devel postgresql-devel mysql-devel sqlite-devel unixODBC-devel openldap-devel openssl-devel nss-devel
+
+
+rpmbuild -tb --clean apr-util-1.5.4.tar.bz2
+
+★APR UTIL RPM설치
+rpm -Uvh apr-util-1.5.4-1.x86_64.rpm apr-util-devel-1.5.4-1.x86_64.rpm
+
+
+
+★distcache-devel 설치(Apache2.4.xx 의존관계)
+wget https://archive.fedoraproject.org/pub/archive/fedora/linux/releases/18/Everything/source/SRPMS/d/distcache-1.4.5-23.src.rpm
+
+rpmbuild --rebuild --clean distcache-1.4.5-23.src.rpm
+
+rpm -Uvh distcache-1.4.5-23.x86_64.rpm distcache-devel-1.4.5-23.x86_64.rpm
+
+
+★의존관계 mailcap 설치
+yum install mailcap
+
+★apache 2.4
+
+rpmbuild -tb --clean httpd-2.4.25.tar.bz2
+
+pcre-devel >= 5.0 is needed by httpd-2.4.25-1.x86_64
+lua-devel is needed by httpd-2.4.25-1.x86_64
+libxml2-devel is needed by httpd-2.4.25-1.x86_64
+
+yum install pcre-devel lua-devel libxml2-devel
+
+rpmbuild -tb --clean httpd-2.4.25.tar.bz2
+→error 
+rpmbuild -tb --clean httpd-2.4.16.tar.bz2
+→ok
+
+rpm -Uvh httpd-2.4.16-1.x86_64.rpm
+
+
+
+★ 포트 추가 
+vi /etc/sysconfig/iptables
+-A INPUT -m state --state NEW -m tcp -p tcp --dport 80 -j ACCEPT
+
+
+vi /etc/httpd/conf/httpd.conf
+User apache
+Group apache
+
+
+
+
+★서비스 기동
+service httpd start
+
+chkconfig httpd on
+
+
+
+
+
+★설정 ON
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_fcgi_module modules/mod_proxy_fcgi.so
+# URL 관련
+LoadModule rewrite_module lib64/httpd/modules/mod_rewrite.so
+
+
+
+★php 연동 fcgi 설정
+<VirtualHost *:80>
+    DocumentRoot "/var/www/html/public"
+    ServerName hoge.com
+    <Directory "/var/www/html/public">
+        <FilesMatch \.php$>
+            SetHandler "proxy:fcgi://127.0.0.1:9000/"
+        </FilesMatch>
+    </Directory>
+
+	# 백앤드쪽 KeepAlive 안함
+	SetEnv proxy-nokeepalive 1
+	
+	# 타임아웃 설정
+	ProxyTimeout 60
+
+	DirectoryIndex index.html index.php
+</VirtualHost>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+★★Apache 2.4 Compile 설치 (미완결)
+
+wget http://ftp.neowiz.com/apache/httpd/httpd-2.2.32.tar.gz
+wget http://ftp.neowiz.com/apache/httpd/httpd-2.4.25.tar.gz
+wget http://ftp.neowiz.com/apache/apr/apr-1.5.2.tar.gz
+wget http://ftp.neowiz.com/apache/apr/apr-util-1.5.4.tar.gz
+wget https://sourceforge.net/projects/pcre/files/pcre/8.39/pcre-8.39.tar.gz
+
+tar xvfz *
+
+
+★APR 설치
+cd apr-1.5.2
+
+./configure --prefix=/usr/local/apr1.5.2
+make
+make test
+make install
+
+ln -s /usr/local/apr1.5.2 /usr/local/apr
+
+★APR UTIL설치
+cd apr-util-1.5.4
+
+./configure --prefix=/usr/local/apr-util-1.5.4 --with-apr=/usr/local/apr
+make
+make test
+make install
+
+ln -s /usr/local/apr-util-1.5.4 /usr/local/apr-util
+
+
+★의존관계 mailcap 설치
+yum install mailcap
+
+
+

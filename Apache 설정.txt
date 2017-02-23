@@ -1,0 +1,109 @@
+<VirtualHost *:80>    
+	ServerAlias webapi.dd-on.local    
+	DocumentRoot /var/batch/dd-on.batch/public/    
+	#AliasMatch /(.)/(.).(html|htm|js|css|jpeg|jpg|gif|png) /var/www/static/dd-on.local/htdocs/$1/$2.$3    
+	#LogLevel debug    
+	ErrorLog  "|/usr/local/apache2/bin/rotatelogs /var/log/httpd/error_log.%Y%m%d 86400 540"
+    CustomLog "|/usr/local/apache2/bin/rotatelogs /var/log/httpd/access_log.%Y%m%d 86400 540" common env=!no_log
+    <FilesMatch \.php$>
+        <If "-f %{REQUEST_FILENAME}">
+             SetHandler "proxy:fcgi://127.0.0.1:9000"
+        </If>
+    </FilesMatch>
+
+    <Directory /var/batch/*/public/>
+        Options +FollowSymLinks -Indexes
+        AllowOverride FileInfo Limit
+        Require all granted
+        DirectoryIndex index.php
+        SetEnv FUEL_ENV local
+        RewriteEngine on
+        #LogLevel debug rewrite:trace8
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^/var/batch/(.)/public/(.)$ /index.php/$2 [L]
+    </Directory>
+
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerAlias webapi.dd-on.local
+    DocumentRoot /var/batch/dd-on.batch/public/
+    SSLEngine on
+    SSLCertificateFile "/usr/local/apache2/conf/server.crt"
+    SSLCertificateKeyFile "/usr/local/apache2/conf/server.key"
+    ErrorLog  "|/usr/local/apache2/bin/rotatelogs /var/log/httpd/ssl_error_log.%Y%m%d 86400 540"
+    CustomLog "|/usr/local/apache2/bin/rotatelogs /var/log/httpd/ssl_access_log.%Y%m%d 86400 540" common env=!no_log
+    <FilesMatch \.php$>
+        <If "-f %{REQUEST_FILENAME}">
+             SetHandler "proxy:fcgi://127.0.0.1:9000"
+        </If>
+    </FilesMatch>
+    <Directory /var/batch/*/public/>
+        Options +FollowSymLinks -Indexes
+        AllowOverride FileInfo Limit
+        Require all granted
+        DirectoryIndex index.php
+        SetEnv FUEL_ENV local
+        RewriteEngine on
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^/var/batch/(.)/public/(.)$ /index.php/$2 [L]
+    </Directory>
+</VirtualHost>
+
+
+
+
+
+
+
+
+
+
+
+
+<VirtualHost *:80>
+    ServerName example.com
+    ServerAlias www.example.com
+    ServerAlias example.*.xip.io
+
+    DocumentRoot /var/www/example.com/public
+
+    <Directory /var/www/example.com/public>
+        Options -Indexes +FollowSymLinks +MultiViews
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    <FilesMatch \.php$>
+        # 2.4.10+ can proxy to unix socket
+        # SetHandler "proxy:unix:/var/run/php5-fpm.sock|fcgi://localhost/"
+
+        # Else we can just use a tcp socket:
+        SetHandler "proxy:fcgi://127.0.0.1:9000"
+    </FilesMatch>
+
+    ErrorLog ${APACHE_LOG_DIR}/example.com-error.log
+
+    # Possible values include: debug, info, notice, warn, error, crit,
+    # alert, emerg.
+    LogLevel warn
+
+    CustomLog ${APACHE_LOG_DIR}/example.com-access.log combined
+
+</VirtualHost>
+
+
+
+https://serversforhackers.com/video/apache-and-php-fpm
+
+http://qiita.com/shimoju/items/8e9c2a7bddd64e878799
+
+DirectoryIndex index.php index.html
+<FilesMatch \.php$>
+    SetHandler "proxy:fcgi://127.0.0.1:9000"
+</FilesMatch>
+
+
+<FilesMatch \.php$>
+    SetHandler "proxy:unix:/var/run/php-fpm/php-fpm.sock|fcgi://localhost"
+</FilesMatch>

@@ -1,0 +1,115 @@
+◎EPEL 추가
+yum install epel-release
+yum update
+
+◎erlang install
+yum install erlang
+
+[yum --enablerepo=epel -y install rabbitmq-server] => 낮은버전
+
+◎Download RPM
+wget https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitm1_v3_6_10/rabbitmq-server-3.6.10-1.el7.noarch.rpm
+rpm --import https://www.rabbitmq.com/rabbitmq-release-signing-key.asc
+yum install rabbitmq-server-3.6.10-1.e17.noarch.rpm
+
+◎RUN
+systemctl start rabbitmq-server 
+systemctl enable rabbitmq-server
+
+
+◎Firewalld を有効にしている場合は、RabbitMQ ポートの許可が必要です。
+firewall-cmd --add-port=5672/tcp --permanent 
+firewall-cmd --reload
+
+◎Plugin Enable
+rabbitmq-plugins enable rabbitmq_management
+
+The following plugins have been enabled:
+  mochiweb
+  webmachine
+  rabbitmq_web_dispatch
+  amqp_client
+  rabbitmq_management_agent
+  rabbitmq_management
+
+Applying plugin configuration to rabbit@[hostname]... started 6 plugins.
+
+http://127.0.0.1:15672/
+http://192.168.56.200:15672/
+guest/guest  localhost
+
+◎User Add
+  RabbitMQ を利用するためには、まず、ユーザーを追加します。
+  デフォルトではローカルのみ利用可能な guest ユーザーが登録されています。
+
+# rabbitmqctl add_user [ユーザー] [パスワード]
+[root@dlp ~]# rabbitmqctl add_user serverworld password 
+Creating user "serverworld" ...
+...done.
+# ユーザーリスト表示
+[root@dlp ~]# rabbitmqctl list_users 
+Listing users ...
+guest [administrator]
+serverworld []
+...done.
+# ユーザーのパスワードを変更する場合は以下
+[root@dlp ~]# rabbitmqctl change_password serverworld strongpassword 
+Changing password for user "serverworld" ...
+...done.
+# ユーザーに管理者ロールを付与する場合は以下
+[root@dlp ~]# rabbitmqctl set_user_tags serverworld administrator 
+Setting tags for user "serverworld" to [administrator] ...
+...done.
+# ユーザーを削除する場合は以下
+[root@dlp ~]# rabbitmqctl delete_user serverworld 
+Deleting user "serverworld" ...
+...done.
+
+rabbitmqctl add_user kenny kenny
+rabbitmqctl list_users
+rabbitmqctl set_user_tags kenny administrator
+
+
+◎ユーザーを追加しただけでは、まだ RabbitMQ は利用できません。
+  特定のバーチャルホストに対して、追加したユーザーが利用できるように権限を付与することで利用可能となります。
+  バーチャルホストを追加するには以下のように設定します。
+# rabbitmqctl add_vhost [vhost]
+[root@dlp ~]# rabbitmqctl add_vhost /my_vhost 
+Creating vhost "/my_vhost" ...
+...done.
+# vhostリスト表示
+[root@dlp ~]# rabbitmqctl list_vhosts 
+Listing vhosts ...
+/
+/my_vhost
+...done.
+# vhostを削除する場合は以下
+[root@dlp ~]# rabbitmqctl delete_vhost /my_vhost 
+Deleting vhost "/my_vhost" ...
+...done.
+
+
+◎追加したバーチャルホストに対して、特定のユーザーに権限を付与するには以下のように設定します。
+# rabbitmqctl set_permissions [-p vhost] [ユーザー] [パーミッション ⇒ (変更) (書き込み) (読み込み) の順]
+[root@dlp ~]# rabbitmqctl set_permissions -p /my_vhost serverworld ".*" ".*" ".*" 
+Setting permissions for user "serverworld" in vhost "/my_vhost" ...
+...done.
+# vhostのパーミッション表示
+[root@dlp ~]# rabbitmqctl list_permissions -p /my_vhost 
+Listing permissions in vhost "/my_vhost" ...
+serverworld     .*      .*      .*
+...done.
+
+# 特定のユーザーのパーミッション表示
+[root@dlp ~]# rabbitmqctl list_user_permissions serverworld 
+Listing permissions for user "serverworld" ...
+/my_vhost       .*      .*      .*
+...done.
+
+# 特定のvhostに対して特定ユーザーのパーミッションを削除する場合は以下
+[root@dlp ~]# rabbitmqctl clear_permissions -p /my_vhost serverworld 
+Clearing permissions for user "serverworld" in vhost "/my_vhost" ...
+...done.
+
+
+

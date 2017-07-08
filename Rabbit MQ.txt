@@ -24,7 +24,7 @@ systemctl enable rabbitmq-server
 firewall-cmd --add-port=5672/tcp --permanent 
 firewall-cmd --reload
 
-◎Plugin Enable
+◎Plugin Enable Web UI
 rabbitmq-plugins enable rabbitmq_management
 
 The following plugins have been enabled:
@@ -36,6 +36,9 @@ The following plugins have been enabled:
   rabbitmq_management
 
 Applying plugin configuration to rabbit@[hostname]... started 6 plugins.
+
+firewall-cmd --add-port=15672/tcp --permanent 
+firewall-cmd --reload 
 
 http://127.0.0.1:15672/
 http://192.168.56.200:15672/

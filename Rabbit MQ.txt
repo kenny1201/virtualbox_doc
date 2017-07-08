@@ -1,3 +1,6 @@
+◎참조
+https://www.server-world.info/query?os=CentOS_7&p=rabbitmq
+
 ◎EPEL 추가
 yum install epel-release
 yum update
